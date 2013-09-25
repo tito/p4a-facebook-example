@@ -9,6 +9,10 @@ Create debug hash key (default debug key password is `android`)::
     keytool -exportcert -alias androiddebugkey -keystore \ 
         ~/.android/debug.keystore  | openssl sha1 -binary | openssl base64
 
+To make the Facebook SDK useable:
+cd ~/my/facebook/dir/../facebook
+android update project -p .
+
 Available Facebook permissions:
 
     https://developers.facebook.com/docs/reference/fql/permissions/
@@ -20,6 +24,15 @@ Issues:
 
   -> ?, doesn't seem dangerous.
 
+* In FB SDK 3.5:
+change 821-2 in AuthorizationClient.java to:
+
+    ""+intent.getIntExtra(NativeProtocol.EXTRA_PROTOCOL_VERSION, 0));
+    //intent.getStringExtra(NativeProtocol.EXTRA_PROTOCOL_VERSION));
+
+This will fix an error that will occur every time you try to get a session.
+
+
 '''
 
 
@@ -29,6 +42,7 @@ from kivy.clock import Clock
 from jnius import autoclass, PythonJavaClass, java_method, cast
 from android import activity
 from android.runnable import run_on_ui_thread
+import os
 
 
 context = autoclass('org.renpy.android.PythonActivity').mActivity
@@ -79,6 +93,7 @@ class _FacebookGraphUserCallback(PythonJavaClass):
     @java_method('(Lcom/facebook/model/GraphUser;Lcom/facebook/Response;)V')
     def onCompleted(self, user, response):
         self.callback(user, response)
+
 
 
 class Facebook(EventDispatcher):
@@ -140,6 +155,26 @@ class Facebook(EventDispatcher):
             self._requests.remove(req)
         req = Request.newStatusUpdateRequest(
                 self._session, text, _FacebookRequestCallback(_callback))
+        self._requests.append(req)
+        req.executeAsync()
+
+    @run_on_ui_thread
+    def image_post(self, description, image_path, callback=None):
+        '''Post a photo with a description
+        '''
+        # Facebook said the asynchronous request must be run in the ui thread.
+        # ref: https://developers.facebook.com/docs/reference/androidsdk/ayncrequest/
+        req = None
+        def _callback(*args):
+            if callback:
+                callback(*args)
+            self._requests.remove(req)
+        File = autoclass('java.io.File')
+        image_file = File(os.path.abspath(image_path))
+        req = Request.newUploadPhotoRequest(
+                self._session, image_file, _FacebookRequestCallback(_callback))
+        params = req.getParameters()
+        params.putString("message", description);
         self._requests.append(req)
         req.executeAsync()
 
@@ -255,9 +290,14 @@ BoxLayout:
             on_release: app.fb_post(ti.text)
             size_hint_y: None
             height: '48dp'
+        Button:
+            text: 'Post with Photo'
+            on_release: app.fb_image_post(ti.text, './images/kaleidoscope-thumb.jpg')
+            size_hint_y: None
+            height: '48dp'
     '''
 
-    FACEBOOK_APP_ID = '181013788746888'
+    FACEBOOK_APP_ID = '201598793273306'
 
     class FacebookApp(App):
 
@@ -299,6 +339,12 @@ BoxLayout:
                 from time import time
                 self.post_status = 'message posted at {}'.format(time())
             self.facebook.post(text, callback=callback)
+
+        def fb_image_post(self, description, image_path):
+            def callback(*args):
+                from time import time
+                self.post_status = 'message posted at {}'.format(time())
+            self.facebook.image_post(description, image_path, callback=callback)
 
         def on_pause(self):
             return True
