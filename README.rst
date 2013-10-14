@@ -1,4 +1,3 @@
-'''
 Kivy + Facebook SDK
 ===================
 
@@ -58,7 +57,3 @@ change 821-2 in AuthorizationClient.java to:
 Available Facebook permissions:
 
     https://developers.facebook.com/docs/reference/fql/permissions/
-
-
-'''
-
