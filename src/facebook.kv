@@ -1,0 +1,62 @@
+<FacebookUI@BoxLayout>:
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            text: root.status_text
+            markup: True
+            size_hint_y: None
+            height: '48dp'
+
+        Label:
+            text: app.user_infos
+
+        Button:
+            text: 'Log into Facebook'
+            size_hint_y: None
+            height: '48dp'
+            on_release: app.facebook._open()
+
+        Button:
+            text: 'Get user informations'
+            size_hint_y: None
+            height: '48dp'
+            on_release: app.fb_me()
+
+    BoxLayout:
+        orientation: 'vertical'
+        TextInput:
+            id: ti
+            text: 'Hello from Kivy + Facebook Android SDK'
+        Button:
+            text: 'Post to Facebook'
+            on_release: app.fb_post(ti.text)
+            size_hint_y: None
+            height: '48dp'
+        Button:
+            text: 'Post with Photo'
+            on_release: app.fb_image_post(ti.text, './images/kaleidoscope-thumb.jpg')
+            size_hint_y: None
+            height: '48dp'
+
+
+<AskUser@RelativeLayout>:
+    Label:
+        text_size: (self.width, self.height)
+        # font sizes based on avg of height and width
+        font_size: (self.width + self.height) / 2.0 * 0.07
+        text: root.text
+        size_hint: (0.9, 0.6)
+        pos_hint: {'x' : 0.05, 'y' : 0.475}
+        text_size: self.size
+    Button:
+        text: root.action_name
+        size_hint: (0.425, 0.3)
+        pos_hint: {'x' : 0.525, 'y': 0.025}
+        on_press: root.answer(True)
+        font_size: self.height * 0.34
+    Button:
+        text: 'Cancel'
+        size_hint: (0.425, 0.3)
+        pos_hint: {'x' : 0.05, 'y': 0.025}
+        on_press: root.answer(False)
+        font_size: self.height * 0.34
